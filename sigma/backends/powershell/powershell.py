@@ -143,3 +143,16 @@ class PowerShellBackend(TextQueryBackend):
 
     def finalize_output_default(self, queries: List[str]) -> Any:
         return queries
+    
+    def finalize_query_custom(self, rule: SigmaRule, query: Any, index: int, state: ConversionState) -> Any:
+        service = (rule.logsource.service[0] if type(rule.logsource.service)==list else rule.logsource.service).replace('/Operational','').split('-')[-1].lower()
+        fields = compile(r'\$_\.(\w+)')
+        if hasattr(rule, "eventid"):
+            query = f'($_.EventID -eq {rule.eventid}) -and ({query})'
+            return f'Import-Clixml -Path ${service}_path'+ f"|Where-Object {{({query})}}"
+        else:
+            exists_query = '('+' -and '.join(['($_.%s -ne $null)' % s for s in set(fields.findall(query))])+')'
+            return f'Import-Clixml -Path ${service}_path'+ f"|Where-Object {{{exists_query} -and ({query})}}"
+    
+    def finalize_output_custom(self, queries: List[str]) -> Any:
+        return queries

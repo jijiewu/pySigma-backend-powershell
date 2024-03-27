@@ -13,8 +13,9 @@ class PromoteDetectionItemTransformation(Transformation):
         super().apply(pipeline, rule)
         for detection in rule.detection.detections.values():
             for detection_item in detection.detection_items:
-                if detection_item.field == self.field:
-                    setattr(rule, self.field.lower(), detection_item.value[0])
+                if 'field' in detection_item.__dataclass_fields__:
+                    if detection_item.field == self.field:
+                        setattr(rule, self.field.lower(), detection_item.value[0])
 
 @dataclass
 class RemoveWhiteSpaceTransformation(Transformation):
@@ -23,9 +24,10 @@ class RemoveWhiteSpaceTransformation(Transformation):
         super().apply(pipeline, rule)
         for detection in rule.detection.detections.values():
             for detection_item in detection.detection_items:
-                if detection_item.field != None:
-                    if len(detection_item.field.split()) > 1:
-                        detection_item.field = "".join(detection_item.field.split())
+                if 'field' in detection_item.__dataclass_fields__:
+                    if detection_item.field != None:
+                        if len(detection_item.field.split()) > 1:
+                            detection_item.field = "".join(detection_item.field.split())
 
 def powershell_pipeline() -> ProcessingPipeline:
     return ProcessingPipeline(
