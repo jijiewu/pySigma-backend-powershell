@@ -147,7 +147,7 @@ class PowerShellBackend(TextQueryBackend):
     def finalize_query_custom(self, rule: SigmaRule, query: Any, index: int, state: ConversionState) -> Any:
         service = (rule.logsource.service[0] if type(rule.logsource.service)==list else rule.logsource.service).replace('/Operational','').split('-')[-1].lower()
         fields = compile(r'\$_\.(\w+)')
-        rule_id ='|ConvertTo-Json|ForEach-Object {\"$_{\'RuleID\':\'<RULE_ID>\'}\"}'.replace('<RULE_ID>',rule.id.__str__() )
+        rule_id = '|ForEach-Object {$_ | Add-Member -MemberType NoteProperty -Name \'RuleID\' -Value \'<RULE_ID>\' -PassThru}|ConvertTo-Json'.replace('<RULE_ID>',rule.id.__str__() )
         if hasattr(rule, "eventid"):
             query = f'($_.EventID -eq {rule.eventid}) -and ({query})'
             return f'Import-Clixml -Path ${service}_path'+ f"|Where-Object {{($_.EventID -ne $null) -and ({query})}}" + rule_id
