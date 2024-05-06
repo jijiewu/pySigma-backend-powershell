@@ -147,12 +147,13 @@ class PowerShellBackend(TextQueryBackend):
     def finalize_query_custom(self, rule: SigmaRule, query: Any, index: int, state: ConversionState) -> Any:
         service = (rule.logsource.service[0] if type(rule.logsource.service)==list else rule.logsource.service).replace('/Operational','').split('-')[-1].lower()
         fields = compile(r'\$_\.(\w+)')
+        rule_id = '|ForEach-Object {$_ | Add-Member -MemberType NoteProperty -Name \'RuleID\' -Value \'<RULE_ID>\' -PassThru}|ConvertTo-Json'.replace('<RULE_ID>',rule.id.__str__() )
         if hasattr(rule, "eventid"):
             query = f'($_.EventID -eq {rule.eventid}) -and ({query})'
-            return f'Import-Clixml -Path ${service}_path'+ f"|Where-Object {{($_.EventID -ne $null) -and ({query})}}"
+            return f'Import-Clixml -Path ${service}_path'+ f"|Where-Object {{($_.EventID -ne $null) -and ({query})}}" + rule_id
         else:
             exists_query = '('+' -and '.join(['($_.%s -ne $null)' % s for s in set(fields.findall(query))])+')'
-            return f'Import-Clixml -Path ${service}_path'+ f"|Where-Object {{{exists_query} -and ({query})}}"
+            return f'Import-Clixml -Path ${service}_path'+ f"|Where-Object {{{exists_query} -and ({query})}}" + rule_id
     def finalize_output_custom(self, queries: List[str]) -> Any:
         return queries
 
